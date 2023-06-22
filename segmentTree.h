@@ -4,55 +4,63 @@
 using namespace std;
 
 struct SegmentTreeNode {
-    int value;
-    SegmentTreeNode *leftNode, *rightNode;
+    long long value;
+    SegmentTreeNode *leftNode = NULL, *rightNode = NULL;
 
     void createSubNode() {
-        if (leftNode == NULL) leftNode = (SegmentTreeNode*)malloc(sizeof(SegmentTreeNode)); 
-        if (rightNode == NULL) rightNode = (SegmentTreeNode*)malloc(sizeof(SegmentTreeNode));
+        if (leftNode == NULL) {
+            leftNode = (SegmentTreeNode*)malloc(sizeof(SegmentTreeNode)); 
+            leftNode -> value = 0;
+            leftNode -> leftNode = leftNode -> rightNode = NULL;
+        }
+        if (rightNode == NULL) {
+            rightNode = (SegmentTreeNode*)malloc(sizeof(SegmentTreeNode));
+            rightNode -> value = 0;
+            rightNode -> leftNode = rightNode -> rightNode = NULL;
+        }
     }
-    SegmentTreeNode() {value = 0; leftNode = rightNode = NULL;}
-    SegmentTreeNode(int value) {value = value; leftNode = rightNode = NULL;}
-    ~SegmentTreeNode() {delete leftNode; delete rightNode; leftNode = rightNode = NULL;}
 };
 
 struct SegmentTree {
     SegmentTreeNode *root;
-    int activeNode = 0;
+    long long activeNode = 0;
     
     void createTree() {
         root = (SegmentTreeNode*)malloc(sizeof(SegmentTreeNode));
+        root -> value = 0;
+        root -> leftNode = root -> rightNode = NULL;
     }
 
-    void update(SegmentTreeNode *currNode, int l, int r, int pos, int value,  
-        function<void(SegmentTreeNode*, int)> change, function<void(SegmentTreeNode*, SegmentTreeNode*, SegmentTreeNode*)> merge) {
+    void update(SegmentTreeNode *currNode, long long l, long long r, long long pos, long long value,  
+        function<void(SegmentTreeNode*, long long)> change, function<void(SegmentTreeNode*, SegmentTreeNode*, SegmentTreeNode*)> mergeSubNode) {
         
         if (l > pos || r < pos) return;
-        if (l == r) {
+        if (l == r) {            
             change(currNode, value);
             return;
         }
-
-        int mid = (l + r) >> 1;
         currNode -> createSubNode();
-        update(currNode -> leftNode, l, mid, pos, value, change, merge);
-        update(currNode -> rightNode, mid + 1, r, pos, value, change, merge);
-        merge(currNode, currNode -> leftNode, currNode -> rightNode);
+        // cout << currNode -> leftNode -> value << " " << currNode -> rightNode -> value << endl;
+
+        long long mid = (l + r) >> 1;
+        update(currNode -> leftNode, l, mid, pos, value, change, mergeSubNode);
+        update(currNode -> rightNode, mid + 1, r, pos, value, change, mergeSubNode);
+        mergeSubNode(currNode, currNode -> leftNode, currNode -> rightNode);
     }
 
-    SegmentTreeNode* get(SegmentTreeNode *currNode, int l, int r, int u, int v, SegmentTreeNode* defaultValue,
-        function<void(SegmentTreeNode*, SegmentTreeNode*, SegmentTreeNode*)> merge) {
+    SegmentTreeNode* get(SegmentTreeNode *currNode, long long l, long long r, long long u, long long v, SegmentTreeNode* defaultValue,
+        function<void(SegmentTreeNode*, SegmentTreeNode*, SegmentTreeNode*)> mergeSubNode) {
 
         if (l > v || r < u) return defaultValue;
-        if (u <= l && r <= v) currNode; 
+        if (u <= l && r <= v) return currNode; 
 
-        int mid = (l + r) >> 1; 
+        long long mid = (l + r) >> 1; 
         currNode -> createSubNode();
         SegmentTreeNode* result = (SegmentTreeNode*)malloc(sizeof(SegmentTreeNode)); 
-        merge(
+        mergeSubNode(
             result,
-            get(currNode -> leftNode, l, mid, u, v, defaultValue, merge), 
-            get(currNode -> rightNode, mid + 1, r, u, v, defaultValue, merge)
+            get(currNode -> leftNode, l, mid, u, v, defaultValue, mergeSubNode), 
+            get(currNode -> rightNode, mid + 1, r, u, v, defaultValue, mergeSubNode)
         );
         return result;
     }
