@@ -1,36 +1,34 @@
 #include <bits/stdc++.h>
 #include <cstdlib>
 #include <functional>
+#include "templateGeneralFunction.h"
 using namespace std;
-
-template <class T>
-struct SegmentTreeNode {
-    T value;
-    SegmentTreeNode<T> *leftNode = NULL, *rightNode = NULL;
-
-    void createSubNode() {
-        if (leftNode == NULL) {
-            leftNode = (SegmentTreeNode<T>*)malloc(sizeof(SegmentTreeNode<T>)); 
-            leftNode -> value = 0;
-            leftNode -> leftNode = leftNode -> rightNode = NULL;
-        }
-        if (rightNode == NULL) {
-            rightNode = (SegmentTreeNode<T>*)malloc(sizeof(SegmentTreeNode<T>));
-            rightNode -> value = 0;
-            rightNode -> leftNode = rightNode -> rightNode = NULL;
-        }
-    }
-};
 
 template <class T>
 struct SegmentTree {
     SegmentTreeNode<T> *root;
-    int activeNode = 0;
-    
+    int activeNode = 0, head = -1, tail = -1;
+    function<void(SegmentTreeNode<T>*, T)> defaultChangeMethod;
+    function<void(SegmentTreeNode<T>*, SegmentTreeNode<T>*, SegmentTreeNode<T>*)> defaultMergeMethod;
+
     void createTree() {
         root = (SegmentTreeNode<T>*)malloc(sizeof(SegmentTreeNode<T>));
-        root -> value = 0;
+        root -> value = root -> lazy = 0;
         root -> leftNode = root -> rightNode = NULL;
+    }
+
+    void createTree(int headValue, int tailValue, 
+        function<void(SegmentTreeNode<T>*, T)> change, function<void(SegmentTreeNode<T>*, SegmentTreeNode<T>*, SegmentTreeNode<T>*)> mergeSubNode) {
+        
+        createTree();
+        head = headValue;
+        tail = tailValue;
+        defaultChangeMethod = change;
+        defaultMergeMethod = mergeSubNode;
+    }
+
+    void update(int pos, T value) {
+        update(root, head, tail, pos, value, defaultChangeMethod, defaultMergeMethod);
     }
 
     void update(SegmentTreeNode<T> *currNode, int l, int r, int pos, T value,  
@@ -46,6 +44,25 @@ struct SegmentTree {
         int mid = (l + r) >> 1;
         update(currNode -> leftNode, l, mid, pos, value, change, mergeSubNode);
         update(currNode -> rightNode, mid + 1, r, pos, value, change, mergeSubNode);
+        mergeSubNode(currNode, currNode -> leftNode, currNode -> rightNode);
+    }
+
+    void update_lazy(SegmentTreeNode<T> *currNode, int l, int r, int u, int v, T value,  
+        function<void(SegmentTreeNode<T>*, T)> change, 
+        function<void(SegmentTreeNode<T>*, SegmentTreeNode<T>*, SegmentTreeNode<T>*)> mergeSubNode,
+        function<void(SegmentTreeNode<T>*, int, int)> down) {
+        
+        if (u > r || v < l) return;
+        if (u <= l && v >= r) {
+            change(currNode, value);
+            return;
+        }
+        currNode -> createSubNode();
+        down(currNode, l, r);
+
+        int mid = (l + r) >> 1;
+        update_lazy(currNode -> leftNode, l, mid, u, v, value, change, mergeSubNode, down);
+        update_lazy(currNode -> rightNode, mid + 1, r, u, v, value, change, mergeSubNode, down);
         mergeSubNode(currNode, currNode -> leftNode, currNode -> rightNode);
     }
 
@@ -65,4 +82,25 @@ struct SegmentTree {
         );
         return result;
     }
+
+    SegmentTreeNode<T>* get_lazy(SegmentTreeNode<T> *currNode, int l, int r, int u, int v, SegmentTreeNode<T>* defaultValue,
+        function<void(SegmentTreeNode<T>*, SegmentTreeNode<T>*, SegmentTreeNode<T>*)> mergeSubNode,
+        function<void(SegmentTreeNode<T>*, int, int)> down) {
+
+        if (l > v || r < u) return defaultValue;
+        if (u <= l && r <= v) return currNode; 
+
+        currNode -> createSubNode();
+        down(currNode, l, r);
+
+        int mid = (l + r) >> 1; 
+        SegmentTreeNode<T>* result = (SegmentTreeNode<T>*)malloc(sizeof(SegmentTreeNode<T>)); 
+        mergeSubNode(
+            result,
+            get_lazy(currNode -> leftNode, l, mid, u, v, defaultValue, mergeSubNode, down), 
+            get_lazy(currNode -> rightNode, mid + 1, r, u, v, defaultValue, mergeSubNode, down)
+        );
+        return result;
+    }
 };
+
