@@ -6,23 +6,26 @@ using namespace std;
 
 template <class T>
 struct SegmentTree {
-    SegmentTreeNode<T> *root;
+    SegmentTreeNode<T> *root, *defaultNode;
     int activeNode = 0, head = -1, tail = -1;
     function<void(SegmentTreeNode<T>*, T)> defaultChangeMethod;
     function<void(SegmentTreeNode<T>*, SegmentTreeNode<T>*, SegmentTreeNode<T>*)> defaultMergeMethod;
-
+        
     void createTree() {
         root = (SegmentTreeNode<T>*)malloc(sizeof(SegmentTreeNode<T>));
         root -> value = root -> lazy = 0;
         root -> leftNode = root -> rightNode = NULL;
     }
 
-    void createTree(int headValue, int tailValue, 
-        function<void(SegmentTreeNode<T>*, T)> change, function<void(SegmentTreeNode<T>*, SegmentTreeNode<T>*, SegmentTreeNode<T>*)> mergeSubNode) {
+    void createTree(int headValue, int tailValue, int defaultValue,
+        function<void(SegmentTreeNode<T>*, T)> change, 
+        function<void(SegmentTreeNode<T>*, SegmentTreeNode<T>*, SegmentTreeNode<T>*)> mergeSubNode) {
         
         createTree();
         head = headValue;
         tail = tailValue;
+        defaultNode = (SegmentTreeNode<T>*)malloc(sizeof(SegmentTreeNode<T>));
+        defaultNode -> value = defaultValue;
         defaultChangeMethod = change;
         defaultMergeMethod = mergeSubNode;
     }
@@ -64,6 +67,10 @@ struct SegmentTree {
         update_lazy(currNode -> leftNode, l, mid, u, v, value, change, mergeSubNode, down);
         update_lazy(currNode -> rightNode, mid + 1, r, u, v, value, change, mergeSubNode, down);
         mergeSubNode(currNode, currNode -> leftNode, currNode -> rightNode);
+    }
+
+    SegmentTreeNode<T>* get(int u, int v) {
+        return get(root, head, tail, u, v, defaultNode, defaultMergeMethod);
     }
 
     SegmentTreeNode<T>* get(SegmentTreeNode<T> *currNode, int l, int r, int u, int v, SegmentTreeNode<T>* defaultValue,
