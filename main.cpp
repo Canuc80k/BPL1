@@ -25,5 +25,6 @@ signed main() {
         else cout << st.get(u, v) -> value << '\n';
     }
     
+    st.deleteTree(st.root);
     cout << endl;
 }

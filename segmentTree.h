@@ -10,7 +10,7 @@ struct SegmentTree {
     int activeNode = 0, head = -1, tail = -1;
     function<void(SegmentTreeNode<T>*, T)> defaultChangeMethod;
     function<void(SegmentTreeNode<T>*, SegmentTreeNode<T>*, SegmentTreeNode<T>*)> defaultMergeMethod;
-        
+
     void createTree() {
         root = (SegmentTreeNode<T>*)malloc(sizeof(SegmentTreeNode<T>));
         root -> value = root -> lazy = 0;
@@ -108,6 +108,14 @@ struct SegmentTree {
             get_lazy(currNode -> rightNode, mid + 1, r, u, v, defaultValue, mergeSubNode, down)
         );
         return result;
+    }
+
+    void deleteTree(SegmentTreeNode<T> *currNode) {
+        if (currNode == NULL) return;
+
+        deleteTree(currNode -> leftNode);
+        deleteTree(currNode -> rightNode);
+        free(currNode);
     }
 };
 
